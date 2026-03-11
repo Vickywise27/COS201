@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>COS 201 — Python Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #07111f;
+    --surface: #0d1e35;
+    --surface2: #112240;
+    --border: #1d3a62;
+    --gold: #f4a629;
+    --gold-dim: rgba(244,166,41,0.12);
+    --green: #2ecc71;
+    --green-dim: rgba(46,204,113,0.1);
+    --red: #e74c3c;
+    --red-dim: rgba(231,76,60,0.1);
+    --text: #dde8f5;
+    --muted: #5e7a9e;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Sora', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-image:
+      radial-gradient(ellipse at 15% 10%, rgba(13,40,90,0.7) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 90%, rgba(10,30,60,0.5) 0%, transparent 50%);
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; width: 100%; max-width: 640px; animation: fadeUp .35s ease both; }
+  .screen.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── HOME ── */
+  .home-badge {
+    display: inline-block;
+    background: var(--gold); color: #07111f;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 3px; padding: 4px 14px; border-radius: 2px;
+    margin-bottom: 18px; text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: var(--mono); font-size: clamp(32px, 6vw, 48px);
+    font-weight: 700; line-height: 1.05; color: #fff; margin-bottom: 8px;
+  }
+  h1 span { color: var(--gold); }
+
+  .home-sub { font-size: 15px; color: var(--muted); margin-bottom: 32px; font-weight: 300; }
+
+  .pill-row { display: flex; gap: 12px; margin-bottom: 28px; }
+  .pill {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; text-align: center;
+  }
+  .pill-num { font-family: var(--mono); font-size: 24px; color: var(--gold); }
+  .pill-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: .5px; }
+
+  .cfg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 26px; }
+  .cfg-full { grid-column: 1 / -1; }
+  .cfg-label {
+    display: block; font-size: 10px; font-weight: 600;
+    letter-spacing: 2px; color: var(--gold); text-transform: uppercase; margin-bottom: 7px;
+  }
+  select, input[type=number] {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--sans); font-size: 14px;
+    padding: 11px 14px; border-radius: 8px; outline: none;
+    transition: border-color .2s; appearance: none;
+  }
+  select:focus, input:focus { border-color: var(--gold); }
+
+  .btn-primary {
+    width: 100%; padding: 16px;
+    background: var(--gold); color: #07111f;
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    border: none; border-radius: 10px; cursor: pointer;
+    letter-spacing: 2px; transition: transform .15s, box-shadow .2s;
+    box-shadow: 0 4px 24px rgba(244,166,41,.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(244,166,41,.45); }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* ── QUIZ ── */
+  .quiz-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .q-count { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .prog-bar { flex: 1; height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, var(--gold), #ffd27a); border-radius: 3px; transition: width .5s ease; }
+  .score-display { font-family: var(--mono); font-size: 12px; color: var(--gold); white-space: nowrap; }
+
+  /* Timer */
+  .timer-wrap { position: relative; width: 46px; height: 46px; flex-shrink: 0; }
+  .timer-wrap svg { transform: rotate(-90deg); }
+  .timer-num {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 12px; font-weight: 700; color: #fff;
+  }
+
+  .streak-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 13px; font-size: 12px; color: var(--muted);
+    margin-bottom: 13px;
+  }
+  .streak-pill b { color: var(--gold); font-family: var(--mono); }
+  .streak-pill.hidden { display: none; }
+
+  .q-tags { margin-bottom: 10px; }
+  .tag {
+    display: inline-block; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--muted);
+    font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 3px 10px; border-radius: 20px;
+  }
+  .tag-type {
+    display: inline-block; margin-left: 8px;
+    background: var(--gold-dim); border: 1px solid rgba(244,166,41,.25);
+    color: var(--gold); font-size: 10px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase; padding: 3px 9px; border-radius: 20px;
+  }
+
+  .q-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px 24px; margin-bottom: 16px;
+  }
+  .q-text { font-size: 17px; font-weight: 500; line-height: 1.6; color: var(--text); }
+
+  /* Options */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 13px 16px;
+    cursor: pointer; font-size: 14px; color: #a8bdd6;
+    transition: border-color .15s, background .15s, color .15s;
+    text-align: left; width: 100%; font-family: var(--sans);
+  }
+  .opt:hover { border-color: var(--gold); color: #fff; }
+  .opt.disabled { cursor: default; }
+  .opt-letter {
+    min-width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    background: #1d3a62; border-radius: 6px;
+    font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted);
+    transition: background .15s, color .15s; flex-shrink: 0;
+  }
+  .opt.correct { border-color: var(--green); background: var(--green-dim); color: #fff; }
+  .opt.correct .opt-letter { background: var(--green); color: #fff; }
+  .opt.wrong { border-color: var(--red); background: var(--red-dim); color: #fff; }
+  .opt.wrong .opt-letter { background: var(--red); color: #fff; }
+
+  /* Fill */
+  .fill-section { display: flex; flex-direction: column; gap: 10px; }
+  .fill-input {
+    background: var(--surface); border: 1.5px solid var(--border);
+    color: var(--text); font-family: var(--sans); font-size: 16px;
+    padding: 13px 16px; border-radius: 10px; outline: none;
+    transition: border-color .2s; width: 100%;
+  }
+  .fill-input:focus { border-color: var(--gold); }
+  .fill-input.correct { border-color: var(--green); background: var(--green-dim); }
+  .fill-input.wrong { border-color: var(--red); background: var(--red-dim); }
+  .hint-txt { font-size: 12px; color: var(--muted); font-style: italic; }
+  .btn-check {
+    padding: 12px 22px; background: var(--gold); color: #07111f;
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    border: none; border-radius: 8px; cursor: pointer; align-self: flex-start;
+    transition: transform .1s;
+  }
+  .btn-check:hover { transform: translateY(-1px); }
+  .btn-check:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  /* Explanation */
+  .explain-box {
+    margin-top: 14px; border-radius: 12px; padding: 16px 18px; border: 1px solid;
+    animation: fadeUp .3s ease both;
+  }
+  .explain-box.c { background: #081e12; border-color: rgba(46,204,113,.35); }
+  .explain-box.w { background: #1c0808; border-color: rgba(231,76,60,.35); }
+  .explain-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .explain-icon { font-size: 17px; }
+  .explain-lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .explain-lbl.c { color: #4ade80; } .explain-lbl.w { color: #f87171; }
+  .correct-pill {
+    display: inline-block; font-size: 12px; font-family: var(--mono);
+    padding: 5px 10px; border-radius: 6px; background: #0c3322; color: #4ade80;
+    margin-bottom: 10px;
+  }
+  .explain-text { font-size: 13.5px; line-height: 1.75; color: #9ab5d0; }
+  .dots { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
+  .dots span {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--muted);
+    animation: bop 1.2s infinite;
+  }
+  .dots span:nth-child(2) { animation-delay: .2s; }
+  .dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes bop {
+    0%,80%,100% { transform: scale(.55); opacity: .4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  .btn-next {
+    width: 100%; padding: 13px; background: transparent;
+    border: 1.5px solid var(--gold); color: var(--gold);
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; border-radius: 10px; cursor: pointer;
+    margin-top: 12px; transition: background .15s, color .15s;
+  }
+  .btn-next:hover:not(:disabled) { background: var(--gold); color: #07111f; }
+  .btn-next:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ── RESULT ── */
+  .result-center { text-align: center; margin-bottom: 28px; }
+  .grade-word { font-family: var(--mono); font-size: 52px; font-weight: 700; line-height: 1; }
+  .grade-word.pass { color: var(--green); }
+  .grade-word.fail { color: var(--red); }
+  .result-sub { font-size: 15px; color: var(--muted); margin-top: 8px; }
+  .score-ring {
+    width: 112px; height: 112px; border-radius: 50%; border: 4px solid;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; margin: 16px auto;
+  }
+  .score-ring .big { font-family: var(--mono); font-size: 28px; font-weight: 700; }
+  .score-ring .sm { font-size: 12px; color: var(--muted); }
+
+  .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+  .res-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; text-align: center;
+  }
+  .res-num { font-family: var(--mono); font-size: 24px; color: var(--gold); }
+  .res-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  .review-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--gold);
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  .review-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
+  .review-item {
+    background: var(--surface); border-radius: 8px; padding: 12px 14px;
+    border-left: 3px solid var(--red);
+  }
+  .review-q { font-size: 13px; color: var(--text); font-weight: 500; margin-bottom: 5px; }
+  .review-ans { font-size: 11px; font-family: var(--mono); }
+  .your { color: #f87171; } .corr { color: #4ade80; }
+
+  .perfect-msg { text-align: center; font-size: 13px; color: #4ade80; margin-bottom: 16px; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ HOME ═══════════════════════ -->
+<div id="home" class="screen active">
+  <div class="home-badge">COS 201</div>
+  <h1>Python<br /><span>Quiz</span></h1>
+  <p class="home-sub">60 questions · AI explanation for every answer</p>
+
+  <div class="pill-row">
+    <div class="pill"><div class="pill-num">40</div><div class="pill-lbl">MCQ</div></div>
+    <div class="pill"><div class="pill-num">20</div><div class="pill-lbl">Fill-in</div></div>
+    <div class="pill"><div class="pill-num">7</div><div class="pill-lbl">Topics</div></div>
+  </div>
+
+  <div class="cfg-grid">
+    <div>
+      <label class="cfg-label" for="topicSel">Topic</label>
+      <select id="topicSel"></select>
+    </div>
+    <div>
+      <label class="cfg-label" for="typeSel">Type</label>
+      <select id="typeSel">
+        <option value="both">Both</option>
+        <option value="mcq">MCQ Only</option>
+        <option value="fill">Fill-in Only</option>
+      </select>
+    </div>
+    <div class="cfg-full">
+      <label class="cfg-label" for="countInp">Number of Questions</label>
+      <input type="number" id="countInp" min="1" max="60" value="10" />
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="startQuiz()">START QUIZ →</button>
+</div>
+
+<!-- ═══════════════════════ QUIZ ═══════════════════════ -->
+<div id="quiz" class="screen">
+  <div class="quiz-header">
+    <span class="q-count" id="qCount">1/10</span>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <span class="score-display" id="scoreLive">✓ 0</span>
+    <div class="timer-wrap">
+      <svg width="46" height="46" viewBox="0 0 46 46">
+        <circle cx="23" cy="23" r="19" fill="none" stroke="#112240" stroke-width="4"/>
+        <circle id="timerArc" cx="23" cy="23" r="19" fill="none" stroke="#f4a629" stroke-width="4"
+          stroke-dasharray="119.38" stroke-dashoffset="0" stroke-linecap="round"
+          style="transition: stroke-dashoffset .9s linear, stroke .3s"/>
+      </svg>
+      <div class="timer-num" id="timerNum">20</div>
+    </div>
+  </div>
+
+  <div class="streak-pill hidden" id="streakPill">
+    <span>🔥</span><span><b id="streakNum">0</b> in a row! Best: <b id="bestNum">0</b></span>
+  </div>
+
+  <div class="q-tags">
+    <span class="tag" id="topicTag">Topic</span>
+    <span class="tag-type" id="typeTag">MCQ</span>
+  </div>
+
+  <div class="q-card"><div class="q-text" id="qText">Question</div></div>
+
+  <div id="mcqSection" class="options"></div>
+  <div id="fillSection" class="fill-section" style="display:none">
+    <input class="fill-input" type="text" id="fillInput" placeholder="Type your answer…" />
+    <span class="hint-txt" id="hintTxt"></span>
+    <button class="btn-check" id="checkBtn" onclick="checkFill()">CHECK</button>
+  </div>
+
+  <div id="explainBox" style="display:none" class="explain-box">
+    <div class="explain-head">
+      <span class="explain-icon" id="expIcon"></span>
+      <span class="explain-lbl" id="expLbl"></span>
+    </div>
+    <div id="corrPill" class="correct-pill" style="display:none"></div>
+    <div id="expBody"><div class="dots"><span></span><span></span><span></span></div></div>
+  </div>
+
+  <button class="btn-next" id="nextBtn" style="display:none" onclick="nextQuestion()">NEXT →</button>
+</div>
+
+<!-- ═══════════════════════ RESULT ═══════════════════════ -->
+<div id="result" class="screen">
+  <div class="result-center">
+    <div class="grade-word" id="gradeWord">PASS</div>
+    <div class="result-sub">Quiz Complete</div>
+    <div class="score-ring" id="scoreRing">
+      <div class="big" id="scorePct">0%</div>
+      <div class="sm" id="scoreFrac">0/0</div>
+    </div>
+  </div>
+  <div class="res-grid">
+    <div class="res-card"><div class="res-num" id="resCorrect">0</div><div class="res-lbl">Correct</div></div>
+    <div class="res-card"><div class="res-num" id="resWrong">0</div><div class="res-lbl">Wrong</div></div>
+    <div class="res-card"><div class="res-num" id="resBest">0</div><div class="res-lbl">Best Streak</div></div>
+  </div>
+  <div id="reviewSection"></div>
+  <div class="perfect-msg" id="perfectMsg" style="display:none">🎉 Perfect score! You are exam ready!</div>
+  <button class="btn-primary" onclick="goHome()">PLAY AGAIN →</button>
+</div>
+
+<script>
+const QUESTIONS = [
+  {id:1,type:"mcq",topic:"Basics",q:"Which of the following is used to write a comment in Python?",opts:["//","#","/* */","--"],ans:"B"},
+  {id:2,type:"mcq",topic:"I/O",q:"Which function is used to get user input in Python?",opts:["input()","read()","get()","scanf()"],ans:"A"},
+  {id:3,type:"mcq",topic:"Types",q:'What is the output of type("Hello")?',opts:["<class 'string'>","<class 'text'>","<class 'str'>","<string>"],ans:"C"},
+  {id:4,type:"mcq",topic:"Data Structures",q:"Which data structure is immutable?",opts:["List","Dictionary","Tuple","Set"],ans:"C"},
+  {id:5,type:"mcq",topic:"OOP",q:"What does OOP stand for?",opts:["Object Oriented Process","Object Oriented Programming","Oriented Object Programming","Object Operation Program"],ans:"B"},
+  {id:6,type:"mcq",topic:"Data Structures",q:"Which of these can be used as a dictionary key in Python?",opts:["List","Set","Tuple","Dictionary"],ans:"C"},
+  {id:7,type:"mcq",topic:"Operators",q:"What will 5 // 2 return?",opts:["2.5","2","3","Error"],ans:"B"},
+  {id:8,type:"mcq",topic:"Operators",q:"Which operator is used for equality comparison?",opts:["=","==","!=","==="],ans:"B"},
+  {id:9,type:"mcq",topic:"Basics",q:'What is the output of bool("")?',opts:["True","False","1","None"],ans:"B"},
+  {id:10,type:"mcq",topic:"Types",q:"Which of the following is NOT a valid Python data type?",opts:["int","real","list","tuple"],ans:"B"},
+  {id:11,type:"mcq",topic:"Basics",q:"Which statement is true about Python?",opts:["Python is a compiled language.","Python uses static typing.","Python uses dynamic typing.","Python does not support OOP."],ans:"C"},
+  {id:12,type:"mcq",topic:"Exceptions",q:"What keyword is used for exception handling in Python?",opts:["catch","handle","except","throw"],ans:"C"},
+  {id:13,type:"mcq",topic:"Data Structures",q:"Which is a valid way to declare an empty set?",opts:["set = {}","set = set()","set = []","set = ()"],ans:"B"},
+  {id:14,type:"mcq",topic:"Strings",q:"What is the output of 'Python'.lower()?",opts:["PYTHON","python","Python","error"],ans:"B"},
+  {id:15,type:"mcq",topic:"Basics",q:"What does the pass keyword do in Python?",opts:["Skips iteration","Ends function","Does nothing","Returns to start"],ans:"C"},
+  {id:16,type:"mcq",topic:"Control",q:"Which control structure is NOT available in Python?",opts:["if","switch","for","while"],ans:"B"},
+  {id:17,type:"mcq",topic:"Data Structures",q:"Which of these is a built-in method for lists?",opts:["push()","insert()","appendTo()","add()"],ans:"B"},
+  {id:18,type:"mcq",topic:"Types",q:"Which function converts a string to an integer?",opts:["str()","float()","int()","char()"],ans:"C"},
+  {id:19,type:"mcq",topic:"Packages",q:"Which tool installs third-party Python packages?",opts:["npm","install","pip","pkg"],ans:"C"},
+  {id:20,type:"mcq",topic:"Basics",q:"What is the correct file extension for Python files?",opts:[".pyth",".pt",".py",".python"],ans:"C"},
+  {id:21,type:"mcq",topic:"Types",q:"Which of the following is a mutable data type?",opts:["String","Tuple","List","Integer"],ans:"C"},
+  {id:22,type:"mcq",topic:"Operators",q:"What is the output of 3 != 4 in Python?",opts:["True","False","None","Error"],ans:"A"},
+  {id:23,type:"mcq",topic:"OOP",q:"Which keyword is used to create a class in Python?",opts:["object","define","class","type"],ans:"C"},
+  {id:24,type:"mcq",topic:"Strings",q:'What is the result of len("Python")?',opts:["5","6","7","Error"],ans:"B"},
+  {id:25,type:"mcq",topic:"Control",q:"What does range(5) produce?",opts:["[0, 1, 2, 3, 4]","[1, 2, 3, 4, 5]","(0, 1, 2, 3, 4)","0 1 2 3 4"],ans:"A"},
+  {id:26,type:"mcq",topic:"Exceptions",q:"Which exception is raised when a variable is not defined?",opts:["TypeError","KeyError","NameError","ValueError"],ans:"C"},
+  {id:27,type:"mcq",topic:"Data Structures",q:"Which method removes an item from a list by value?",opts:["remove()","delete()","pop()","clear()"],ans:"A"},
+  {id:28,type:"mcq",topic:"Functions",q:"What is the correct syntax to define a function in Python?",opts:["def myFunction:","function myFunction()","def myFunction():","create myFunction()"],ans:"C"},
+  {id:29,type:"mcq",topic:"Strings",q:"Which method converts all characters to uppercase?",opts:["capitalize()","upper()","casefold()","swapcase()"],ans:"B"},
+  {id:30,type:"mcq",topic:"Types",q:"What is the output of type({}) in Python?",opts:["<class 'list'>","<class 'tuple'>","<class 'set'>","<class 'dict'>"],ans:"D"},
+  {id:31,type:"mcq",topic:"Control",q:"What does break do in a loop?",opts:["Skips the current iteration","Ends the loop","Pauses the loop","Restarts the loop"],ans:"B"},
+  {id:32,type:"mcq",topic:"Exceptions",q:"Which is used to handle exceptions in Python?",opts:["do-except","try-catch","try-except","except-catch"],ans:"C"},
+  {id:33,type:"mcq",topic:"Data Structures",q:"Which is a valid dictionary declaration?",opts:['{"name": "John"}','{"John", "name"}','{"name": "John"}  (single quotes)',"[name: John]"],ans:"A"},
+  {id:34,type:"mcq",topic:"Types",q:"Which built-in function returns the type of a variable?",opts:["typeOf()","typeof()","type()","class()"],ans:"C"},
+  {id:35,type:"mcq",topic:"Operators",q:"Which operator is used for logical AND in Python?",opts:["&","&&","and","+"],ans:"C"},
+  {id:36,type:"mcq",topic:"Control",q:"Which of the following is NOT a valid Python loop?",opts:["for","do while","while","All are valid"],ans:"B"},
+  {id:37,type:"mcq",topic:"OOP",q:"In Python, self refers to:",opts:["The current module","The parent class","The instance of the class","A built-in function"],ans:"C"},
+  {id:38,type:"mcq",topic:"Strings",q:"What is the output of 'Python'[0:3]?",opts:["Pyt","Py","Pyth","Error"],ans:"A"},
+  {id:39,type:"mcq",topic:"OOP",q:"Which method is automatically called when an object is created?",opts:["__start__","__new__","__init__","__create__"],ans:"C"},
+  {id:40,type:"mcq",topic:"Control",q:"What does continue do in a loop?",opts:["Ends the loop","Skips the rest of current iteration","Pauses execution","Restarts the loop"],ans:"B"},
+  {id:41,type:"fill",topic:"Basics",q:"_______ represents a single-line comment in Python.",ans:"#",hint:"A single character symbol"},
+  {id:42,type:"fill",topic:"I/O",q:"The _______ function is used to receive input from the user.",ans:"input",hint:"Takes user input"},
+  {id:43,type:"fill",topic:"I/O",q:"The _______ function is used to display output in Python.",ans:"print",hint:"Displays text to screen"},
+  {id:44,type:"fill",topic:"Basics",q:"A variable is created using the _______ operator.",ans:"=",hint:"Assignment symbol"},
+  {id:45,type:"fill",topic:"Basics",q:"Python uses _______ typing, meaning variable types are inferred at runtime.",ans:"dynamic",hint:"Opposite of static"},
+  {id:46,type:"fill",topic:"Functions",q:"The keyword used to define a function in Python is _______.",ans:"def",hint:"Short for define"},
+  {id:47,type:"fill",topic:"Control",q:"A block of code that runs only if a condition is true uses the _______ statement.",ans:"if",hint:"Basic conditional"},
+  {id:48,type:"fill",topic:"Control",q:"The _______ loop is used when the number of iterations is known.",ans:"for",hint:"Iterates over a sequence"},
+  {id:49,type:"fill",topic:"Data Structures",q:"A _______ is an ordered, mutable, and indexed collection.",ans:"list",hint:"Uses square brackets"},
+  {id:50,type:"fill",topic:"Data Structures",q:"A _______ is an ordered, immutable, and indexed collection.",ans:"tuple",hint:"Uses parentheses, cannot change"},
+  {id:51,type:"fill",topic:"Data Structures",q:"In Python, a _______ is an unordered collection of unique items.",ans:"set",hint:"No duplicates allowed"},
+  {id:52,type:"fill",topic:"Data Structures",q:"A _______ stores key-value pairs.",ans:"dictionary",hint:"Like a real-world dictionary"},
+  {id:53,type:"fill",topic:"OOP",q:"To define a class in Python, the keyword _______ is used.",ans:"class",hint:"The OOP blueprint keyword"},
+  {id:54,type:"fill",topic:"OOP",q:"The special method _______ initializes the attributes of an object.",ans:"__init__",hint:"Constructor with double underscores"},
+  {id:55,type:"fill",topic:"OOP",q:"Instance variables are prefixed with _______, which refers to the current instance.",ans:"self",hint:"Refers to current instance"},
+  {id:56,type:"fill",topic:"OOP",q:"In inheritance, the _______ class is the parent and the _______ class inherits from it.",ans:"parent / child",hint:"Superclass / subclass"},
+  {id:57,type:"fill",topic:"Data Structures",q:"The function _______ returns the number of items in a list or string.",ans:"len",hint:"Short for length"},
+  {id:58,type:"fill",topic:"Data Structures",q:"The method _______ adds an item to the end of a list.",ans:"append",hint:"Adds to the end"},
+  {id:59,type:"fill",topic:"Strings",q:"String values are converted to uppercase using _______() and lowercase using _______().",ans:"upper / lower",hint:"Two opposite string methods"},
+  {id:60,type:"fill",topic:"Exceptions",q:"To handle exceptions, risky code goes in a _______ block, handled by an _______ block.",ans:"try / except",hint:"Python exception keywords"},
+];
+
+const LETTERS = ["A","B","C","D"];
+const CIRC = 2 * Math.PI * 19; // svg r=19
+
+// State
+let questions=[], current=0, score=0, streak=0, bestStreak=0;
+let results=[], timerInterval=null, timeLeft=20, answered=false;
+
+// ── INIT ──────────────────────────────────────────────
+(function init() {
+  const topics = ["All", ...new Set(QUESTIONS.map(q => q.topic))];
+  const sel = document.getElementById("topicSel");
+  topics.forEach(t => { const o = document.createElement("option"); o.value = t; o.textContent = t; sel.appendChild(o); });
+})();
+
+// ── HELPERS ───────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  const el = document.getElementById(id);
+  el.classList.add("active");
+  // Re-trigger animation
+  el.style.animation = "none";
+  el.offsetHeight;
+  el.style.animation = "";
+}
+function $(id) { return document.getElementById(id); }
+
+// ── TIMER ─────────────────────────────────────────────
+function startTimer() {
+  timeLeft = 20;
+  updateTimer();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeout(); }
+  }, 1000);
+}
+function stopTimer() { clearInterval(timerInterval); }
+function updateTimer() {
+  $("timerNum").textContent = timeLeft;
+  const pct = timeLeft / 20;
+  $("timerArc").style.strokeDashoffset = CIRC * (1 - pct);
+  $("timerArc").style.stroke = timeLeft > 10 ? "#f4a629" : timeLeft > 5 ? "#e07b10" : "#e74c3c";
+}
+
+// ── QUIZ FLOW ─────────────────────────────────────────
+function startQuiz() {
+  const topic = $("topicSel").value;
+  const qtype = $("typeSel").value;
+  const cnt   = Math.max(1, Math.min(60, parseInt($("countInp").value)||10));
+
+  let pool = [...QUESTIONS];
+  if (topic !== "All") pool = pool.filter(q => q.topic === topic);
+  if (qtype === "mcq")  pool = pool.filter(q => q.type === "mcq");
+  if (qtype === "fill") pool = pool.filter(q => q.type === "fill");
+  questions = shuffle(pool).slice(0, cnt);
+
+  current = 0; score = 0; streak = 0; bestStreak = 0; results = [];
+  show("quiz");
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[current];
+
+  // Header
+  $("qCount").textContent = `${current+1}/${questions.length}`;
+  $("progFill").style.width = `${(current/questions.length)*100}%`;
+  $("scoreLive").textContent = `✓ ${score}`;
+  $("topicTag").textContent = q.topic;
+  $("typeTag").textContent = q.type === "fill" ? "FILL-IN" : "MCQ";
+  $("qText").textContent = q.q;
+
+  // Streak
+  if (streak > 1) {
+    $("streakPill").classList.remove("hidden");
+    $("streakNum").textContent = streak;
+    $("bestNum").textContent = bestStreak;
+  } else { $("streakPill").classList.add("hidden"); }
+
+  // Hide explanation and next
+  $("explainBox").style.display = "none";
+  $("nextBtn").style.display = "none";
+  $("nextBtn").disabled = true;
+  $("nextBtn").textContent = "NEXT →";
+
+  if (q.type === "mcq") {
+    $("mcqSection").style.display = "flex";
+    $("fillSection").style.display = "none";
+    renderMCQ(q);
+  } else {
+    $("mcqSection").style.display = "none";
+    $("fillSection").style.display = "flex";
+    const inp = $("fillInput");
+    inp.value = "";
+    inp.className = "fill-input";
+    inp.disabled = false;
+    $("hintTxt").textContent = `💡 Hint: ${q.hint}`;
+    $("hintTxt").style.display = "";
+    $("checkBtn").disabled = false;
+    $("checkBtn").style.display = "";
+    inp.focus();
+    inp.onkeydown = e => { if (e.key === "Enter" && !answered) checkFill(); };
+  }
+
+  startTimer();
+}
+
+function renderMCQ(q) {
+  const sec = $("mcqSection");
+  sec.innerHTML = "";
+  q.opts.forEach((opt, i) => {
+    const letter = LETTERS[i];
+    const btn = document.createElement("button");
+    btn.className = "opt";
+    btn.innerHTML = `<span class="opt-letter">${letter}</span>${escHtml(opt)}`;
+    btn.onclick = () => checkMCQ(letter, q);
+    sec.appendChild(btn);
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function handleTimeout() {
+  answered = true;
+  streak = 0;
+  const q = questions[current];
+  results.push({ q, userAnswer: "⏱ Time up", correct: false });
+  revealMCQColors(q, null);
+  showExplainBox(q, "⏱ Time up", false);
+}
+
+// ── MCQ CHECK ─────────────────────────────────────────
+function checkMCQ(letter, q) {
+  if (answered) return;
+  answered = true;
+  stopTimer();
+  q = q || questions[current];
+  const correct = letter === q.ans;
+  if (correct) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
+  else { streak = 0; }
+  results.push({ q, userAnswer: letter, correct });
+  revealMCQColors(q, letter);
+  showExplainBox(q, letter, correct);
+}
+
+function revealMCQColors(q, chosen) {
+  const btns = $("mcqSection").querySelectorAll(".opt");
+  btns.forEach((btn, i) => {
+    btn.onclick = null;
+    btn.classList.add("disabled");
+    const letter = LETTERS[i];
+    if (letter === q.ans) btn.classList.add("correct");
+    else if (letter === chosen) btn.classList.add("wrong");
+  });
+}
+
+// ── FILL CHECK ────────────────────────────────────────
+function checkFill() {
+  if (answered) return;
+  const q = questions[current];
+  const val = $("fillInput").value.trim();
+  if (!val) return;
+  answered = true;
+  stopTimer();
+  const acceptable = q.ans.toLowerCase().split("/").map(a => a.trim());
+  const userLow = val.toLowerCase();
+  const correct = acceptable.some(a => userLow === a || userLow.includes(a) || a.includes(userLow));
+  if (correct) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
+  else { streak = 0; }
+  results.push({ q, userAnswer: val, correct });
+  $("fillInput").classList.add(correct ? "correct" : "wrong");
+  $("fillInput").disabled = true;
+  $("checkBtn").style.display = "none";
+  $("hintTxt").style.display = "none";
+  showExplainBox(q, val, correct);
+}
+
+// ── EXPLANATION ───────────────────────────────────────
+function showExplainBox(q, userAnswer, correct) {
+  const box = $("explainBox");
+  box.className = `explain-box ${correct ? "c" : "w"}`;
+  box.style.display = "block";
+  $("expIcon").textContent = correct ? "✅" : "❌";
+  $("expLbl").className = `explain-lbl ${correct ? "c" : "w"}`;
+  $("expLbl").textContent = correct ? "Correct!" : "Incorrect";
+
+  const pill = $("corrPill");
+  if (!correct) {
+    pill.style.display = "inline-block";
+    if (q.type === "mcq") {
+      const idx = LETTERS.indexOf(q.ans);
+      pill.textContent = `✓ ${q.ans}) ${q.opts[idx]}`;
+    } else {
+      pill.textContent = `✓ Answer: ${q.ans}`;
+    }
+  } else {
+    pill.style.display = "none";
+  }
+
+  $("expBody").innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  $("nextBtn").style.display = "block";
+  $("nextBtn").disabled = true;
+  $("nextBtn").textContent = "Getting explanation…";
+
+  callClaudeForExplanation(q, userAnswer, correct).then(text => {
+    $("expBody").innerHTML = `<div class="explain-text">${escHtml(text)}</div>`;
+    $("nextBtn").disabled = false;
+    $("nextBtn").textContent = current+1 >= questions.length ? "SEE RESULTS →" : "NEXT →";
+  });
+}
+
+async function callClaudeForExplanation(q, userAnswer, correct) {
+  const isMCQ = q.type === "mcq";
+  const correctOpt = isMCQ ? q.opts[LETTERS.indexOf(q.ans)] : null;
+  const userOpt = isMCQ && userAnswer !== "⏱ Time up" ? q.opts[LETTERS.indexOf(userAnswer)] : null;
+
+  let prompt;
+  if (isMCQ) {
+    prompt = correct
+      ? `A first-year Python student answered this quiz question correctly.\n\nQuestion: "${q.q}"\nCorrect answer: ${q.ans}) ${correctOpt}\n\nIn 2-3 sentences, explain clearly WHY this answer is correct. Be educational and concise. No greetings or preamble.`
+      : `A first-year Python student got this quiz question wrong.\n\nQuestion: "${q.q}"\nStudent chose: ${userAnswer !== "⏱ Time up" ? `${userAnswer}) ${userOpt}` : "(time ran out)"}\nCorrect answer: ${q.ans}) ${correctOpt}\n\nIn 2-3 sentences: explain why the student's choice is wrong, then explain why the correct answer is right. Be encouraging and clear. No greetings.`;
+  } else {
+    prompt = correct
+      ? `A first-year Python student correctly answered a fill-in-the-blank question.\n\nQuestion: "${q.q}"\nAnswer: "${q.ans}"\n\nIn 2-3 sentences, explain what this answer means in Python and why it is correct. No greetings.`
+      : `A first-year Python student got this fill-in-the-blank wrong.\n\nQuestion: "${q.q}"\nStudent wrote: "${userAnswer}"\nCorrect answer: "${q.ans}"\n\nIn 2-3 sentences: explain why their answer is wrong, then explain what the correct answer is. Be encouraging. No greetings.`;
+  }
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text || "Explanation unavailable.";
+  } catch {
+    return "Could not load explanation — check your connection.";
+  }
+}
+
+// ── NEXT ──────────────────────────────────────────────
+function nextQuestion() {
+  current++;
+  if (current >= questions.length) { showResult(); return; }
+  renderQuestion();
+}
+
+// ── RESULT ────────────────────────────────────────────
+function showResult() {
+  show("result");
+  const total = questions.length;
+  const pct = Math.round((score/total)*100);
+  const pass = pct >= 70;
+
+  $("gradeWord").textContent = pass ? "PASS" : "FAIL";
+  $("gradeWord").className = `grade-word ${pass ? "pass" : "fail"}`;
+  $("scoreRing").style.borderColor = pass ? "#2ecc71" : "#e74c3c";
+  $("scorePct").textContent = pct + "%";
+  $("scorePct").style.color = pass ? "#2ecc71" : "#e74c3c";
+  $("scoreFrac").textContent = `${score}/${total}`;
+  $("resCorrect").textContent = score;
+  $("resWrong").textContent = total - score;
+  $("resBest").textContent = bestStreak;
+
+  const wrong = results.filter(r => !r.correct);
+  const sec = $("reviewSection");
+  sec.innerHTML = "";
+  if (wrong.length) {
+    sec.innerHTML = `<div class="review-title">Missed Questions (${wrong.length})</div>`;
+    const list = document.createElement("div");
+    list.className = "review-list";
+    wrong.forEach(r => {
+      const item = document.createElement("div");
+      item.className = "review-item";
+      item.innerHTML = `
+        <div class="review-q">${escHtml(r.q.q)}</div>
+        <div class="review-ans">
+          <span class="your">✗ You: ${escHtml(r.userAnswer)}</span>
+          &nbsp;·&nbsp;
+          <span class="corr">✓ Answer: ${escHtml(r.q.ans)}</span>
+        </div>`;
+      list.appendChild(item);
+    });
+    sec.appendChild(list);
+  }
+
+  $("perfectMsg").style.display = score === total ? "block" : "none";
+}
+
+function goHome() { show("home"); }
+</script>
+</body>
+</html>
